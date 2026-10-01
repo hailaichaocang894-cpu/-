@@ -1,0 +1,75 @@
+<script>
+    let proxyArray = new Array(), chatArray = new Array(), blacklistArray = new Array(), rankArray = new Array();
+    let isAdmin = false, isMod = false, pullCount = 0, score = 0, lastSendTime = 0, gps = 0;
+    const mySessionId = 'user_' + Math.random().toString(36).substr(2, 9);
+
+    function switchTab(id, btn) {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    }
+    document.getElementById('textColorPicker').addEventListener('input', (e) => {
+        document.querySelectorAll('.loop-text').forEach(t => t.style.color = e.target.value);
+    });
+    function updateClock() {
+        const now = new Date(), d = ['日','月','火','水','木','金','土'];
+        document.getElementById('clockDisplay').textContent = now.getFullYear() + '/' + 
+            String(now.getMonth() + 1).padStart(2,'0') + '/' + String(now.getDate()).padStart(2,'0') + 
+            ' (' + d[now.getDay()] + ') ' + String(now.getHours()).padStart(2,'0') + ':' + 
+            String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    }
+    setInterval(updateClock, 1000); updateClock();
+    function escapeHTML(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+    document.getElementById('omikujiBtn').addEventListener('click', () => {
+        pullCount++; const r = Math.random() * 100; let c = Math.max(1, 25 - (pullCount * 3));
+        let res = (r < c) ? "✨ 超激レア大吉：奇跡！ダイヤのように輝く一日！" : (r < 50) ? "☀️ 中吉：なにか良いことが起きるかも。" : (r < 75) ? "🌱 小吉：普通の幸せが一番。" : "☔ 凶 : 数学の計算ミスに気をつけて！";
+        document.getElementById('omikujiResult').textContent = res;
+        document.getElementById('omikujiCount').textContent = `試行回数: ${pullCount}回 | 大吉確率: ${c.toFixed(1)}%`;
+    });
+
+    document.getElementById('gameTarget').addEventListener('click', () => { score++; updateGameUI(); });
+    setInterval(() => { if (gps > 0) { score += gps; updateGameUI(); } }, 1000);
+    function buyFacility(type, cost) {
+        if (score >= cost) { score -= cost; if (type === 1) gps += 1; if (type === 2) gps += 8; updateGameUI(); }
+        else { alert("ダイヤが足りません！"); }
+    }
+    function updateGameUI() {
+        document.getElementById('gameScore').textContent = score;
+        document.getElementById('gameGps').textContent = gps;
+        document.getElementById('item_1').disabled = (score < 15);
+        document.getElementById('item_2').disabled = (score < 100);
+    }
+    function resetGame() { score = 0; gps = 0; updateGameUI(); }
+    
+    function submitScore() {
+        const name = document.getElementById('chatName').value.trim() || "名無し";
+        if (score <= 0) { alert("スコアが0点です！"); return; }
+        const now = new Date(), dateStr = (now.getMonth() + 1) + "/" + now.getDate();
+        rankArray.push({ name: name, score: score, date: dateStr });
+        rankArray.sort((a, b) => b.score - a.score); rankArray = rankArray.slice(0, 10);
+        google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_ranking', JSON.stringify(rankArray));
+        alert(`ランキングに ${score} pts で送信しました！`); resetGame();
+    }
+    function renderLeaderboard() {
+        let rBox = document.getElementById('rankBox');
+        if (!rBox) { rBox = document.createElement('div'); rBox.id = 'rankBox'; rBox.style = "margin-top:20px; background:#fff; border:1px solid #ccc; padding:15px; border-radius:10px; max-width:400px;"; document.getElementById('greenGameSection').appendChild(rBox); }
+        rBox.innerHTML = "<h3>🏆 世界リアルタイムランキング</h3>";
+        if (rankArray.length === 0) rBox.innerHTML += "<p style='font-size:0.85rem; color:#888;'>データなし</p>";
+        rankArray.forEach((u, i) => { const dStr = u.date ? ` (${u.date})` : ''; rBox.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:2px 0;"><span><b>#${i+1}</b> ${escapeHTML(u.name)}${dStr}</span><span style="color:#28a745; font-weight:bold;">${u.score} pts</span></div>`; });
+    }
+
+    function renderProxies() {
+        const list = document.getElementById('proxyList'); if (!list) return; list.innerHTML = "";
+        proxyArray.forEach((url, i) => { list.innerHTML += `<div class="proxy-item" style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>[${i+1}] ${escapeHTML(url)}</span>${isAdmin ? `<button onclick="deleteProxy(${i})">削除</button>`:''}</div>`; });
+        list.scrollTop = list.scrollHeight;
+    }
+    function addProxy() {
+        if (!isAdmin && !isMod) { alert("❌ モデレーター以上のみ可能です。"); return; }
+        const input = document.getElementById('proxyInput');
+        if (input.value.trim() !== "") { proxyArray.push(input.value.trim()); google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_proxy', JSON.stringify(proxyArray)); input.value = ""; }
+    }
+    function deleteProxy(i) { if (isAdmin) { proxyArray.splice(i, 1); google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_proxy', JSON.stringify(proxyArray)); } }
+  
+    
+</script>
