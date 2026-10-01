@@ -1,0 +1,85 @@
+<script>
+    // タブ切り替え
+    function switchTab(sectionId, currentBtn) {
+        document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+        currentBtn.classList.add('active');
+    }
+
+    // ループ色変更
+    document.getElementById('textColorPicker').addEventListener('input', (e) => {
+        document.querySelectorAll('.loop-text').forEach(t => t.style.color = e.target.value);
+    });
+
+    // 時計システム
+    function updateClock() {
+        const now = new Date();
+        const dayList = ['日', '月', '火', '水', '木', '金', '土'];
+        const timeString = now.getFullYear() + '/' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+            String(now.getDate()).padStart(2, '0') + ' (' + 
+            dayList[now.getDay()] + ') ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0') + ':' + 
+            String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('clockDisplay').textContent = timeString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 確率変動おみくじ
+    let pullCount = 0;
+    document.getElementById('omikujiBtn').addEventListener('click', () => {
+        pullCount++;
+        const rand = Math.random() * 100;
+        let daikichiChance = Math.max(1, 25 - (pullCount * 3));
+        let result = "";
+        if (rand < daikichiChance) result = "✨ 超激レア大吉：奇跡！ダイヤのように輝く一日！";
+        else if (rand < 50) result = "☀️ 中吉：なにか良いことが起きるかも。";
+        else if (rand < 75) result = "🌱 小吉：普通の幸せが一番。";
+        else result = "☔ 凶：数学の計算ミスに気をつけて！";
+        document.getElementById('omikujiResult').textContent = result;
+        document.getElementById('omikujiCount').textContent = "試行回数: " + pullCount + "回 | 大吉確率: " + daikichiChance.toFixed(1) + "%";
+    });
+
+    // 緑連打ゲーム
+    let score = 0;
+    document.getElementById('gameTarget').addEventListener('click', () => {
+        score++;
+        document.getElementById('gameScore').textContent = score;
+    });
+    function resetGame() { score = 0; document.getElementById('gameScore').textContent = 0; }
+    
+    // 出力バグ防止用エスケープ関数
+    function escapeHTML(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    <!-- js_base.html の末尾に追記 -->
+    // 1. 文字を変更して枠の外をクリックしたときにサーバーへ自動保存
+    document.querySelectorAll('#scheduleList li').forEach(li => {
+        li.addEventListener('blur', function() {
+            const period = this.getAttribute('data-period');
+            const text = this.innerText;
+            
+            google.script.run
+                .withSuccessHandler(() => console.log(`${period}時間目を保存しました`))
+                .withFailureHandler(err => alert('保存に失敗しました: ' + err))
+                .saveSchedule(period, text);
+        });
+    });
+
+    // 2. ページを開いたときにサーバーから保存データを取得して画面に反映
+    window.addEventListener('load', function() {
+        google.script.run
+            .withSuccessHandler(function(schedules) {
+                for (let i = 1; i <= 6; i++) {
+                    if (schedules[i]) {
+                        document.getElementById(`period_${i}`).innerText = schedules[i];
+                    }
+                }
+            })
+            .withFailureHandler(err => console.error('データの読み込みに失敗:', err))
+            .getSavedSchedules();
+    });
+</script>
