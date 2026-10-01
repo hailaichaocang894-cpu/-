@@ -1,0 +1,114 @@
+<script>
+    function checkLoginSession() { const s = localStorage.getItem('saved_user_role'); if (s === 'admin') applyAdminUI(); else if (s === 'mod') applyModUI(); }
+    function loadAllData() {
+        google.script.run.withSuccessHandler(function(data) {
+            chatArray = JSON.parse(data.chat); proxyArray = JSON.parse(data.proxy); rankArray = JSON.parse(data.ranking);
+            renderChat(); renderProxies(); renderLeaderboard(); updateGameUI(); renderSoundboard();
+        }).getGlobalData();
+        blacklistArray = JSON.parse(localStorage.getItem('gas_blacklist')) || new Array();
+        if (isAdmin) renderBlacklist();
+    }
+    
+    function renderChat() {
+        const box = document.getElementById('chatLog'); if (!box) return; const isBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 10; box.innerHTML = "";
+        chatArray.forEach((msg, i) => {
+            const cls = (msg.senderId === mySessionId) ? ' chat-msg my-msg' : ' chat-msg';
+            let name = (msg.role === 'admin') ? `<span class="admin-name">${escapeHTML(msg.name)}</span>` : (msg.role === 'mod') ? `<span class="mod-name">${escapeHTML(msg.name)}</span>` : `<strong>${escapeHTML(msg.name)}</strong>`;
+            let btn = isAdmin ? `<button class="admin-btn" onclick="editChatMessage(${i})">📝</button><button class="admin-btn" onclick="deleteChatMessage(${i})">×</button>` : isMod ? `<button class="admin-btn" onclick="deleteChatMessage(${i})">×</button>` : '';
+            
+            let bodyText = escapeHTML(msg.text);
+            if (msg.text.indexOf('[IMAGE_DATA]:') === 0) {
+                bodyText = `<br><img src="${msg.text.substring(13)}" style="max-width:150px; max-height:150px; border-radius:4px; margin-top:5px;">`;
+            } else if (msg.text.indexOf('/') === 0 && msg.text.indexOf('.mp3') !== -1) {
+                bodyText = `<span style="color:#28a745; font-weight:bold;">🎵 効果音ボタンを設置しました！</span>`;
+            }
+            box.innerHTML += `<div class="${cls}">${name}: ${bodyText} <span class="chat-time">${msg.time}</span> ${btn}</div>`;
+        });
+        if (isBottom) box.scrollTop = box.scrollHeight;
+    }
+
+    function renderSoundboard() {
+        const sBox = document.getElementById('soundboardBox'); if (!sBox) return;
+        sBox.innerHTML = ""; let hasSound = false;
+        chatArray.forEach(msg => {
+            if (msg.text.indexOf('/') === 0 && msg.text.indexOf('.mp3') !== -1) {
+                const cleanText = msg.text.substring(1), spaceIdx = cleanText.indexOf(' ');
+                if (spaceIdx !== -1) {
+                    const btnName = cleanText.substring(0, spaceIdx), mp3Url = cleanText.substring(spaceIdx + 1).trim();
+                    hasSound = true;
+                    const btn = document.createElement('button'); btn.className = 'sound-pad'; btn.textContent = btnName;
+                    btn.onclick = function() { new Audio(mp3Url).play(); };
+                    sBox.appendChild(btn);
+                }
+            }
+        });
+        if (!hasSound) sBox.innerHTML = "<p style='font-size:0.85rem; color:#888;'>チャット欄に「/ボタン名 mp3URL」を入力するとここに設置されます。</p>";
+    }
+
+    function sendChatMessage() {
+        const nameIn = document.getElementById('chatName'), textIn = document.getElementById('chatInput'), name = nameIn.value.trim() || "名無し", msgText = textIn.value.trim();
+        if (blacklistArray.includes(name)) { alert("❌ アクセス禁止されています。"); return; }
+        if (msgText === "") return;
+        if (msgText.length > 200 && msgText.indexOf('[IMAGE_DATA]:') !== 0) { alert("❌ 200文字制限です。"); return; }
+        if (!isAdmin && !isMod) {
+            const nowTime = new Date().getTime();
+            if (nowTime - lastSendTime < 2000) { alert("❌ 2秒間は連投できません！"); return; }
+            lastSendTime = nowTime;
+        }
+        const now = new Date(), time = String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+        chatArray.push({ name: name + (isAdmin ? " (管理人)" : isMod ? " (モデレーター)" : ""), text: msgText, time: time, senderId: mySessionId, role: isAdmin ? 'admin' : isMod ? 'mod' : 'user' });
+        google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_chat', JSON.stringify(chatArray)); textIn.value = "";
+    }
+
+    function toggleStampBox() { const box = document.getElementById('stampBox'); box.style.display = (box.style.display==='none'||box.style.display==='')?'flex':'none'; }
+    function sendStamp(emoji) { document.getElementById('chatInput').value = "[スタンプ] " + emoji; sendChatMessage(); toggleStampBox(); }
+    function handleImageSelect(input) {
+        if (input.files && input.files) {
+            const file = input.files[0];
+            if (file.size > 800 * 1024) { alert("❌ 画像は800KB以下にしてください。"); input.value = ""; return; }
+            const reader = new FileReader();
+            reader.onload = function(e) { document.getElementById('chatInput').value = "[IMAGE_DATA]:" + e.target.result; sendChatMessage(); input.value = ""; };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function promptAdminLogin() { if (prompt("パスワード：") === "109") { localStorage.setItem('saved_user_role', 'admin'); applyAdminUI(); } else alert("❌ 違います。"); }
+    function promptModLogin() { if (prompt("パスワード：") === "108") { localStorage.setItem('saved_user_role', 'mod'); applyModUI(); } else alert("❌ 違います。"); }
+    function applyAdminUI() {
+        isAdmin = true; isMod = false; document.getElementById('adminLoginBtn').style.display = 'none'; document.getElementById('modLoginBtn').style.display = 'none';
+        document.getElementById('badgeAdmin').style.display = 'inline'; document.getElementById('badgeMod').style.display = 'none'; document.getElementById('logoutBtn').style.display = 'inline';
+        document.getElementById('navAdminPanel').style.display = 'inline-block'; loadAllData();
+    }
+    function applyModUI() {
+        isAdmin = false; isMod = true; document.getElementById('adminLoginBtn').style.display = 'none'; document.getElementById('modLoginBtn').style.display = 'none';
+        document.getElementById('badgeAdmin').style.display = 'none'; document.getElementById('badgeMod').style.display = 'inline'; document.getElementById('logoutBtn').style.display = 'inline';
+        document.getElementById('navAdminPanel').style.display = 'none'; loadAllData();
+    }
+    function logout() {
+        localStorage.removeItem('saved_user_role'); isAdmin = false; isMod = false;
+        document.getElementById('adminLoginBtn').style.display = 'inline'; document.getElementById('modLoginBtn').style.display = 'inline';
+        document.getElementById('badgeAdmin').style.display = 'none'; document.getElementById('badgeMod').style.display = 'none'; document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('navAdminPanel').style.display = 'none'; switchTab('scheduleSection', document.querySelector('.tab-btn')); loadAllData();
+    }
+    function applyScoreCheat() {
+        if (!isAdmin) return;
+        const input = document.getElementById('cheatScoreInput'); const amount = parseInt(input.value, 10);
+        if (!isNaN(amount) && amount > 0) { score += amount; updateGameUI(); alert(`💎 チート成功：+ ${amount}`); input.value = ""; }
+    }
+    function addBlacklist() {
+        const input = document.getElementById('blacklistInput');
+        if (input.value.trim() && !blacklistArray.includes(input.value.trim())) { blacklistArray.push(input.value.trim()); localStorage.setItem('gas_blacklist', JSON.stringify(blacklistArray)); renderBlacklist(); input.value = ""; }
+    }
+    function removeBlacklist(i) { blacklistArray.splice(i, 1); localStorage.setItem('gas_blacklist', JSON.stringify(blacklistArray)); renderBlacklist(); }
+    function renderBlacklist() {
+        const box = document.getElementById('blacklistLog'); if (!box) return; box.innerHTML = "";
+        blacklistArray.forEach((name, idx) => { box.innerHTML += `<div class="blacklist-item"><span>${escapeHTML(name)}</span><button onclick="removeBlacklist(${idx})">解除</button></div>`; });
+    }
+    function editChatMessage(i) { if (isAdmin) { const t = prompt("編集：", chatArray[i].text); if (t) { chatArray[i].text = t.trim(); google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_chat', JSON.stringify(chatArray)); } } }
+    function deleteChatMessage(i) { if ((isAdmin || isMod) && confirm("削除しますか？")) { chatArray.splice(i, 1); google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_chat', JSON.stringify(chatArray)); } }
+    function clearChatLog() { if (isAdmin) { chatArray = [{name: "SYSTEM", text: "消去完了", time: "", senderId: "system", role: "system"}]; google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_chat', JSON.stringify(chatArray)); } }
+    function clearProxyLog() { if (isAdmin && confirm("初期化しますか？")) { proxyArray = ["example.com", "192.168.1.254:3128"]; google.script.run.withSuccessHandler(loadAllData).saveGlobalData('g_proxy', JSON.stringify(proxyArray)); } }
+
+    document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+    checkLoginSession(); loadAllData(); setInterval(loadAllData, 2000);
+</script>
