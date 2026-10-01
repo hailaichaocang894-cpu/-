@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>2の2総合ウェブ</title>
+    <?!= include('css'); ?>
+</head>
+<body>
+    <div class="top-panel">
+        <div class="color-control">
+            <label for="textColorPicker">✨ ループ色：</label>
+            <input type="color" id="textColorPicker" value="#000000">
+        </div>
+        <div class="digital-clock" id="clockDisplay"></div>
+    </div>
+    <div class="loop-container">
+        <div class="loop-text">大日本ダイヤ帝国万歳！！！！！！！！！！！！！</div>
+        <div class="loop-text">大日本ダイヤ帝国万歳！！！！！！！！！！！！！</div>
+        <div class="loop-text">大日本ダイヤ帝国万歳！！！！！！！！！！！！！</div>
+        <div class="loop-text">大日本ダイヤ帝国万歳！！！！！！！！！！！！！</div>
+        <div class="loop-text" aria-hidden="true">大日本ダイヤ帝国万歳！！！！！！！！！！！！！</div>
+    </div>
+    <main class="content">
+        <a href="https://google.com" target="_blank" rel="noopener noreferrer" class="google-round-btn">Google</a>
+        <div class="nav-buttons">
+            <button class="tab-btn active" onclick="switchTab('scheduleSection', this)">📅 予定表</button>
+            <button class="tab-btn" onclick="switchTab('authorSection', this)">👤 作者ルーム</button>
+            <button class="tab-btn" onclick="switchTab('chatSection', this)">💬 簡易チャット</button>
+            <button class="tab-btn" onclick="switchTab('greenGameSection', this)">🟢 ゲーム</button>
+            <button class="tab-btn" onclick="switchTab('proxySection', this)">📦 プロキシ</button>
+            <button class="tab-btn" onclick="switchTab('radarSection', this)">🌦️ 雨雲</button>
+            <button class="tab-btn" id="navAdminPanel" onclick="switchTab('adminPanelSection', this)" style="display:none; background-color:#6f42c1;">👑 管理パネル</button>
+        </div>
+
+     
+<div id="scheduleSection" class="page-section active">
+    <h2>我らの合法ダイヤ！！（予定表）</h2>
+    <ul class="schedule-list" id="scheduleList">
+        <li contenteditable="true" id="period_1" data-period="1">1時間目：社会</li>
+        <li contenteditable="true" id="period_2" data-period="2">2時間目：数学</li>
+        <li contenteditable="true" id="period_3" data-period="3">3時間目：国語</li>
+        <li contenteditable="true" id="period_4" data-period="4">4時間目：英語</li>
+        <li contenteditable="true" id="period_5" data-period="5">5時間目：音楽</li>
+        <li contenteditable="true" id="period_6" data-period="6">6時間目：なし</li>
+    </ul>
+</div>
+
+
+        <div id="authorSection" class="page-section">
+            <h2>🏠 作者情報ルーム</h2>
+            <p>作者：<strong>失恋系</strong></p>
+            <p>管理者azi</p>
+            <div class="omikuji-box">
+                <button class="omikuji-btn" id="omikujiBtn">おみくじを引く</button>
+                <p id="omikujiResult">ボタンを押してね</p>
+                <p id="omikujiCount">試行回数: 0回</p>
+            </div>
+        </div>
+
+        <div id="chatSection" class="page-section">
+            <h2>💬 簡易チャットルーム</h2>
+            <div class="chat-container">
+                <div class="chat-header">
+                    <button class="login-btn" id="adminLoginBtn" onclick="promptAdminLogin()">🔑 管理人</button>
+                    <button class="login-btn" id="modLoginBtn" style="background:#e4a11b" onclick="promptModLogin()">🔰 モデ</button>
+                    <span class="status-badge" id="badgeAdmin" style="background:#8a2be2">👑 管理人</span>
+                    <span class="status-badge" id="badgeMod" style="background:#e4a11b">🔰 モデ</span>
+                    <button class="logout-btn" id="logoutBtn" onclick="logout()">退出</button>
+                </div>
+                <div class="chat-log" id="chatLog"></div>
+                <div style="display:flex; gap:5px; align-items:center; margin-bottom: 10px;">
+                    <input type="text" id="chatName" style="width:60px;" placeholder="名前" value="名無し">
+                    <input type="text" id="chatInput" style="flex:1; padding:6px;" placeholder="/ボタン名 mp3URL で効果音設置">
+                    <input type="file" id="chatImageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(this)">
+                    <button onclick="document.getElementById('chatImageInput').click()" style="background:#17a2b8; color:#fff; border:none; padding:6px 10px; cursor:pointer; font-weight:bold;">🖼️</button>
+                    <button onclick="toggleStampBox()" style="background:#ffc107; color:#333; border:none; padding:6px 10px; cursor:pointer; font-weight:bold;">🦭</button>
+                    <button onclick="sendChatMessage()" style="background:#28a745; color:#fff; border:none; padding:6px 12px; cursor:pointer; font-weight:bold;">送信</button>
+                </div>
+                <div id="stampBox" style="display:none; background:#fff; border:1px solid #ced4da; padding:10px; margin-top:5px; border-radius:4px; gap:10px; flex-wrap:wrap;">
+                    <span onclick="sendStamp('😊')" style="font-size:1.5rem; cursor:pointer;">😊</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="greenGameSection" class="page-section">
+            <h2>🟢 クリッカーゲーム</h2>
+            <div class="green-game-container">
+                <div class="click-target" id="gameTarget">CLICK!</div>
+                <p style="font-size:1.4rem; font-weight:bold; color:#28a745;">保有ダイヤ: <span id="gameScore">0</span></p>
+                <p>秒間自動生産 (GPS): <span id="gameGps">0</span></p>
+                <button onclick="resetGame()">リセット</button>
+                <button onclick="submitScore()" style="background:#28a745; color:#fff; border:none; padding:6px 12px; cursor:pointer;">🏆 送信</button>
+                <div class="shop-box">
+                    <div class="shop-item"><span>⛏️ ツルハシ (+1)</span><button class="shop-btn" id="item_1" onclick="buyFacility(1, 15)">15</button></div>
+                    <div class="shop-item"><span>🤖 ロボット (+8)</span><button class="shop-btn" id="item_2" onclick="buyFacility(2, 100)">100</button></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="proxySection" class="page-section">
+            <h2>📦 プロキシ倉庫</h2>
+            <div class="proxy-container">
+                <div class="proxy-list" id="proxyList"></div>
+                <div style="margin-top:10px; display:flex; gap:5px;">
+                    <input type="text" id="proxyInput" style="flex:1;" placeholder="URLやIPを入力">
+                    <button onclick="addProxy()" style="background:#333; color:#fff; border:none; padding:6px 12px;">格納</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="radarSection" class="page-section">
+            <h2>🌦️ 雨雲レーダー</h2>
+            <div class="radar-box">
+                <a href="https://weathernews.jp" target="_blank" rel="noopener noreferrer" class="radar-link-btn" style="display:inline-block; background:#007bff; color:#fff; padding:10px 15px; text-decoration:none; border-radius:4px; margin-right:5px;">🌊 ウェザーニュース</a>
+                <a href="https://tenki.jp" target="_blank" rel="noopener noreferrer" class="radar-link-btn alt" style="display:inline-block; background:#17a2b8; color:#fff; padding:10px 15px; text-decoration:none; border-radius:4px;">🛰️ tenki.jp</a>
+            </div>
+        </div>
+
+       
+<div id="adminPanelSection" class="page-section">
+    <h2>👑 最高管理者パネル</h2>
+    <div class="admin-panel-box">
+        <h3>❄️ チャットシステム制御</h3>
+        <button id="freezeBtn" onclick="toggleChatFreeze()" style="background:#ffc107; color:#222; border:none; padding:8px 16px; cursor:pointer; font-weight:bold; border-radius:4px;">🔒 チャットを凍結する</button>
+        <span id="freezeStatus" style="margin-left:10px; font-weight:bold; color:#dc3545;"></span>
+
+        <hr style="border:0; border-top:1px solid #ffeeba; margin:15px 0;">
+        <h3>🚫 IPアドレスBAN（アクセス禁止）</h3>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <input type="text" id="ipBanInput" placeholder="BANするIPアドレス（例: 192.168.1.1）" style="flex:1; padding:6px;">
+            <button onclick="addIpBan()" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; cursor:pointer; font-weight:bold;">🚨 IPBAN登録</button>
+        </div>
+        <div id="ipBanLog" style="background:#fff; border:1px solid #ced4da; padding:8px; max-height:100px; overflow-y:auto; font-family:monospace; font-size:0.9rem; color:#333;"></div>
+
+        <hr style="border:0; border-top:1px solid #ffeeba; margin:15px 0;">
+        <h3>⚡ スコアチート</h3>
+        <input type="number" id="cheatScoreInput" placeholder="増やすダイヤ数">
+        <button onclick="applyScoreCheat()" style="background:#28a745; color:#fff; border:none; padding:4px 8px; cursor:pointer;">💎 追加</button>
+        
+        <hr style="border:0; border-top:1px solid #ffeeba; margin:15px 0;">
+        <h3>🚫 アク禁（ブラックリスト名前）</h3>
+        <input type="text" id="blacklistInput" placeholder="ブロックする名前">
+        <button onclick="addBlacklist()" style="background:#222; color:#fff; border:none; padding:4px 8px;">登録</button>
+        <div class="blacklist-box" id="blacklistLog"></div>
+        
+        <hr style="border:0; border-top:1px solid #ffeeba; margin:15px 0;">
+        <button onclick="clearChatLog()" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; cursor:pointer;">💬 チャット消去</button>
+        <button onclick="clearProxyLog()" style="background:#bd2130; color:#fff; border:none; padding:6px 12px; cursor:pointer;">📦 プロキシ消去</button>
+    </div>
+</div>
+
+        </div>
+    </main>
+
+    <div class="version-tag">Version 1.2 beta</div>
+    <footer class="site-footer">
+        <p>不適切なコンテンツの通報：<a href="mailto:hailaichaocang894@gmail.com">hailaichaocang894@gmail.com</a></p>
+    </footer>
+
+    <?!= include('js'); ?>
+    <?!= include('js_part2'); ?>
+
+    <!-- 💡 時間割自動保存＆読み込みスクリプト -->
+    <script>
+        // 1. 文字を変更して枠の外をクリックしたときにサーバーへ自動保存
+        document.querySelectorAll('#scheduleList li').forEach(li => {
+            li.addEventListener('blur', function() {
+                const period = this.getAttribute('data-period');
+                const text = this.innerText;
+                
+                google.script.run
+                    .withSuccessHandler(() => console.log(`${period}時間目を保存しました`))
+                    .withFailureHandler(err => alert('保存に失敗しました: ' + err))
+                    .saveSchedule(period, text);
+            });
+        });
+
+        // 2. ページを開いたときにサーバーから保存データを取得して画面に反映
+        window.addEventListener('load', function() {
+            google.script.run
+                .withSuccessHandler(function(schedules) {
+                    for (let i = 1; i <= 6; i++) {
+                        if (schedules[i]) {
+                            document.getElementById(`period_${i}`).innerText = schedules[i];
+                        }
+                    }
+                })
+                .withFailureHandler(err => console.error('データの読み込みに失敗:', err))
+                .getSavedSchedules();
+        });
+    </script>
+</body>
+</html>
