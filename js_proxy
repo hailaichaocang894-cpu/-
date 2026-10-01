@@ -1,0 +1,52 @@
+<script>
+    function loadProxies() {
+        const saved = localStorage.getItem('gas_proxies');
+        proxyArray = saved ? JSON.parse(saved) : ["example.com", "192.168.1.254:3128"];
+        renderProxies();
+    }
+    
+    function renderProxies() {
+        const list = document.getElementById('proxyList');
+        if (!list) return;
+        list.innerHTML = "";
+        proxyArray.forEach((url, index) => {
+            const item = document.createElement('div');
+            item.className = 'proxy-item';
+            const deleteBtn = isAdmin ? `<button class="del-btn" onclick="deleteProxy(${index})">削除</button>` : '';
+            item.innerHTML = `<span class="proxy-text">[${index + 1}] ${escapeHTML(url)}</span>${deleteBtn}`;
+            list.appendChild(item);
+        });
+        list.scrollTop = list.scrollHeight;
+    }
+    
+    function addProxy() {
+        if (!isAdmin && !isMod) {
+            alert("❌ プロキシの格納権限がありません。モデレーターまたは管理人としてログインしてください。");
+            return;
+        }
+        const input = document.getElementById('proxyInput');
+        if (input.value.trim() !== "") {
+            proxyArray.push(input.value.trim());
+            localStorage.setItem('gas_proxies', JSON.stringify(proxyArray));
+            renderProxies();
+            input.value = "";
+        }
+    }
+    
+    function deleteProxy(index) {
+        if (isAdmin) {
+            proxyArray.splice(index, 1);
+            localStorage.setItem('gas_proxies', JSON.stringify(proxyArray));
+            renderProxies();
+        }
+    }
+    
+    function clearProxyLog() {
+        if (isAdmin && confirm("プロキシ倉庫のデータをすべて初期化しますか？")) {
+            proxyArray = ["example.com", "192.168.1.254:3128"];
+            localStorage.setItem('gas_proxies', JSON.stringify(proxyArray));
+            renderProxies();
+            alert("📦 プロキシ倉庫をリセットしました。");
+        }
+    }
+</script>
